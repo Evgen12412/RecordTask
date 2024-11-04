@@ -1,17 +1,18 @@
 
-import logging
-
-logger = logging.getLogger(__name__)
 
 import os
 import logging
 
+import telebot
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
 from django.http import JsonResponse, FileResponse
 
 from audio_converter.models import VoiceRecording
+
+from text_processing.models import Transcription
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +54,29 @@ class TaskStatusView(APIView):
             pass
 
         elif task_status == 'send':
-            print("hey")
+            task = get_object_or_404(Transcription, id=task_id)
+            self.send_message(task.text)
             logger.debug("Processing 'send' task status")
-            pass
+
 
         return JsonResponse({'status': 'success', 'task_status': task_status, 'task_id': task_id})
 
 
+    def send_message(self, message):
+        import threading
+        from decouple import config
 
+
+        api = config('TELEGRAM_API_TOKEN')
+        chat_id = config('TELEGRAM_CHAT_ID')
+        bot = telebot.TeleBot(api)
+
+        def send_telegram_message():
+            try:
+                bot.send_message(chat_id=chat_id, text=message)
+                logger.debug(f"Message sent: {message}")
+            except Exception as e:
+                logger.error(f"Error sending message: {e}")
+
+        # Запуск отправки сообщения в отдельном потоке
+        threading.Thread(target=send_telegram_message).start()
