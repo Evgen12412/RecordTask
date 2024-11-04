@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(response => {
         if (status === 'run' && response.status === 200) {
-            const audioBlob = new Blob([response.data], { type: 'audio/wav' }); // Создаем Blob объект
+            const audioBlob = new Blob([response.data], { type: 'audio/mp3' }); // Создаем Blob объект
             const url = URL.createObjectURL(audioBlob); // Создаём URL для этого Blob-а
             const audioElement = document.getElementById('recorded2Audio');
             audioElement.src = url;

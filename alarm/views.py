@@ -53,6 +53,7 @@ class TaskStatusView(APIView):
             pass
 
         elif task_status == 'send':
+            print("hey")
             logger.debug("Processing 'send' task status")
             pass
 
