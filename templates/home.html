@@ -88,6 +88,7 @@
 
     <div class="widows">
         <div class="widowsL">
+            {% csrf_token %}
             <button class="mic-btn" id="record-btn">
                 <img src="{% static 'mic.webp' %}" class="mic">
             </button>
@@ -141,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Создаем объект Recorder
       return new RecordRTC(stream, {
         type: 'audio',
-        mimeType: 'audio/wav'
+        mimeType: 'audio/mp3'
       });
     })
     .then(rec => {
@@ -322,8 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
         responseType: 'blob' // Укажите, что ожидаете получить blob-данные
     })
     .then(response => {
-        if (response.status === 200) {
-            const audioBlob = new Blob([response.data], { type: 'audio/mp3' }); // Создаем Blob объект
+        if (status === 'run' && response.status === 200) {
+            const audioBlob = new Blob([response.data], { type: 'audio/wav' }); // Создаем Blob объект
             const url = URL.createObjectURL(audioBlob); // Создаём URL для этого Blob-а
             const audioElement = document.getElementById('recorded2Audio');
             audioElement.src = url;
