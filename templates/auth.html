@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+    <title>Регистрация и Авторизация</title>
+</head>
+<body>
+
+<div class="form-container">
+    <div id="registration-form">
+        <h2>Регистрация</h2>
+        <div class="container-forms">
+            <form action="{% url 'register' %}" method="post">
+                {% csrf_token %}
+                {{ registration_form.as_p }}
+                <input type="submit" value="Зарегистрироваться" class="btn">
+                <div class="toggle">
+                    <div class="span-title"><span>Авторизация</span></div>
+                    <div class="q-container">
+                        <div class="main">
+                            <input type="checkbox" id="hidcheck" hidden class="toggle-button" onclick="toggleForm()">
+                            <label class="capsule" for="hidcheck" id="capsule-id">
+                                <div class="circle"></div>
+                                <div class="text-signs">
+                                    <span id="on"></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+    <div id="login-form" class="hidden">
+        <h2>Авторизация</h2>
+        <div class="container-forms">
+            <form action="{% url 'login' %}" method="post">
+                {% csrf_token %}
+                {{ login_form.as_p }}
+                <input type="submit" value="Войти" class="btn">
+                <div class="toggle">
+                    <div class="span-title"><span>Регистрация</span></div>
+                    <div class="q-container">
+                        <div class="main">
+                            <input type="checkbox" id="hidcheck" hidden class="toggle-button" onclick="toggleForm()">
+                            <label class="capsule" for="hidcheck" id="capsule-id">
+                                <div class="circle"></div>
+                                <div class="text-signs">
+                                    <span id="on"></span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('toggle-registration').addEventListener('change', toggleForm);
+    document.getElementById('toggle-login').addEventListener('change', toggleForm);
+
+    function toggleForm() {
+        var registrationForm = document.getElementById('registration-form');
+        var loginForm = document.getElementById('login-form');
+
+        if (registrationForm.classList.contains('hidden')) {
+            registrationForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+        } else {
+            registrationForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        }
+    }
+</script>
+
+</body>
+</html>

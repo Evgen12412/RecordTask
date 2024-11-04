@@ -1,0 +1,229 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+    <script src="{% static 'RecordRTC.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <title>Task manager</title>
+    <style>
+        .mic-btn.vibrating {
+            animation: vibrate 0.5s infinite;
+        }
+
+        @keyframes vibrate {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-2px) rotate(-2deg); }
+            40% { transform: translateX(2px) rotate(2deg); }
+            60% { transform: translateX(-2px) rotate(-2deg); }
+            80% { transform: translateX(2px) rotate(2deg); }
+            100% { transform: translateX(0); }
+        }
+
+        .status-bar {
+            width: 10%;
+            height: 20px;
+            background-color: #f3f3f3;
+            position: relative;
+            overflow: hidden;
+            top: 100px;
+            left: -41px;
+        }
+
+        .status-bar-fill {
+            height: 100%;
+            background-color: #4caf50;
+            width: 0;
+            transition: width 0.1s;
+        }
+
+        .status-bar-time {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #333;
+            font-size: 14px;
+            line-height: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="home-container">
+    <div class="container-app">
+        <span class="title-home">Task Manager</span>
+        <div class="header">
+            <span>name</span>
+            <div class="user"><img src="{% static 'user.webp' %}" class="user-img"></div>
+        </div>
+    </div>
+
+    <div class="widows">
+        <div class="widowsL">
+            <button class="mic-btn" id="record-btn">
+                <img src="{% static 'mic.webp' %}" class="mic">
+            </button>
+            <div class="status-bar">
+                <div class="status-bar-fill" id="status-bar-fill"></div>
+                <div class="status-bar-time" id="status-bar-time">00:00</div>
+                <div><audio id="recordedAudio" controls></audio></div>
+            </div>
+        </div>
+        <div class="widowsR">
+
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const recordButton = document.querySelector('#record-btn');
+  const statusBarFill = document.querySelector('#status-bar-fill');
+  const statusBarTime = document.querySelector('#status-bar-time');
+  let recorder = null;
+  let isRecording = false;
+  let recordingStartTime = null;
+  let recordingInterval = null;
+
+  // Проверяем, загружен ли RecordRTC
+  if (typeof RecordRTC === 'undefined') {
+    console.error('RecordRTC не загружен');
+    return;
+  }
+
+  // Запрашиваем разрешение на использование микрофона
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+      // Создаем объект Recorder
+      return new RecordRTC(stream, {
+        type: 'audio',
+        mimeType: 'audio/wav'
+      });
+    })
+    .then(rec => {
+      recorder = rec;
+      // Добавляем обработчик клика на кнопку
+      recordButton.addEventListener('click', toggleRecording);
+    })
+    .catch(err => console.error('Ошибка получения доступа к микрофону:', err));
+
+  function toggleRecording() {
+    if (!isRecording) {
+      startRecording();
+    } else {
+      stopRecording();
+    }
+  }
+
+  async function startRecording() {
+    try {
+      await recorder.startRecording(); // Начинаем запись
+      isRecording = true;
+      recordButton.classList.add('vibrating'); // Включаем вибрацию
+      recordingStartTime = Date.now();
+      updateRecordingTime();
+      recordingInterval = setInterval(updateRecordingTime, 100);
+    } catch (err) {
+      console.error('Не удалось начать запись:', err);
+    }
+  }
+
+  function stopRecording() {
+    recorder.stopRecording(() => {
+        isRecording = false;
+        recordButton.classList.remove('vibrating'); // Выключаем вибрацию
+        clearInterval(recordingInterval);
+        statusBarFill.style.width = '0';
+        statusBarTime.textContent = '00:00';
+
+        // Получаем записанные данные
+        const blob = recorder.getBlob();
+
+        // Создаем URL для записанного аудио
+        const audioURL = URL.createObjectURL(blob);
+
+        // Воспроизводим записанное аудио
+        const recordedAudio = document.getElementById('recordedAudio');
+        recordedAudio.src = audioURL;
+        recordedAudio.play();
+
+        // Отправляем аудио на сервер после воспроизведения
+        sendAudioToServer(blob);
+    });
+  }
+
+  function updateRecordingTime() {
+    const elapsedTime = Date.now() - recordingStartTime;
+    const seconds = Math.floor(elapsedTime / 1000) % 60;
+    const minutes = Math.floor(elapsedTime / 1000 / 60);
+    statusBarTime.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    statusBarFill.style.width = `${(elapsedTime / 1000) * 2}%`; // Умножаем на 2 для более быстрого заполнения
+  }
+
+  /**
+   * Отправляет аудиоданные на сервер
+   */
+  function sendAudioToServer(audioData) {
+    const formData = new FormData();
+    formData.append('audio_file', audioData, 'recording.wav');
+
+    const csrftoken = getCookie('csrftoken');
+
+    axios.post('/record/', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => {
+        if (response.data.status === 'success') {
+            alert(`Запись успешно отправлена. ID записи: ${response.data.recording_id}`);
+            // Отправляем запрос на транскрипцию
+            transcribeAudio(response.data.recording_id);
+        } else {
+            alert(`Произошла ошибка: ${response.data.error}`);
+        }
+    })
+    .catch(error => {
+        alert(`Произошла ошибка: ${error.message}`);
+    });
+  }
+
+  /**
+   * Отправляет запрос на транскрипцию аудиофайла
+   */
+  function transcribeAudio(recordingId) {
+    axios.get(`/transcribe/${recordingId}/`)
+    .then(response => {
+        if (response.data.status === 'success') {
+            alert(`Транскрипция успешно запущена. Order ID: ${response.data.order_id}`);
+            // Здесь можно добавить логику для получения расшифрованного текста после завершения транскрипции
+        } else {
+            alert(`Произошла ошибка: ${response.data.error}`);
+        }
+    })
+    .catch(error => {
+        alert(`Произошла ошибка: ${error.message}`);
+    });
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+  }
+});
+</script>
+</body>
+</html>
