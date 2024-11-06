@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     'audio_converter',
     'text_processing',
     'alarm',
-    'send_to_telegram'
 ]
 
 MIDDLEWARE = [

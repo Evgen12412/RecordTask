@@ -1,5 +1,3 @@
-
-
 import os
 import logging
 
@@ -22,16 +20,16 @@ class TaskStatusView(APIView):
         task_status = request.data.get('task')
         task_id = request.data.get('task_id')
 
-        logger.debug(f"Received task status: {task_status}, task_id: {task_id}")
+        logger.debug(f"Получен статус задачи: {task_status}, task_id: {task_id}")
 
         if task_status == 'run':
             try:
                 recording = VoiceRecording.objects.get(id=task_id)
-                logger.debug(f"Found recording: {recording}")
+                logger.debug(f"Найдена запись: {recording}")
 
                 if recording.user != request.user:
-                    logger.warning(f"Permission denied for user: {request.user}")
-                    return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+                    logger.warning(f"Разрешение отклонено для пользователя: {request.user}")
+                    return JsonResponse({'status': 'error', 'message': 'Доступ запрещен'}, status=403)
 
                 audio_file_path = recording.audio_file.path
                 logger.debug(f"Audio file path: {audio_file_path}")
@@ -78,5 +76,8 @@ class TaskStatusView(APIView):
             except Exception as e:
                 logger.error(f"Error sending message: {e}")
 
-        # Запуск отправки сообщения в отдельном потоке
+        """
+            Запуск отправки сообщения в отдельном потоке
+            
+        """
         threading.Thread(target=send_telegram_message).start()

@@ -5,7 +5,6 @@ from django.utils import timezone
 
 import speech_recognition as sr
 from django.http import JsonResponse
-from django.shortcuts import render
 from pydub import AudioSegment
 from rest_framework.views import APIView
 import re

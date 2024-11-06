@@ -15,8 +15,6 @@ from text_processing.models import Transcription
 logger = logging.getLogger(__name__)
 
 
-# Create your views here.
-
 @login_required
 def home(request, user_id):
     try:

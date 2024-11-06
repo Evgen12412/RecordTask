@@ -1,18 +1,11 @@
 import os
 from django.core.files.base import ContentFile
-from django.shortcuts import render
-import speech_recognition as sr
 from pydub import AudioSegment
 from django.http import JsonResponse
-from django.contrib.auth import login, logout, authenticate
 from rest_framework.views import APIView
 
 from .models import  VoiceRecording
-from django.shortcuts import render, redirect, get_object_or_404
 import logging
-import json
-import requests
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,5 @@
 from django.db import models
 
-
 from audio_converter.models import VoiceRecording
 
 from app.models import MyUser
